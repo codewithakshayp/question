@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Tech Quiz</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        :root {
+    --primary-color: #4a90e2;
+    --success-color: #2ecc71;
+    --error-color: #e74c3c;
+    --dark-bg: #2c3e50;
+    --light-bg: #f4f7f6;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--light-bg);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+}
+
+.quiz-container {
+    background: white;
+    width: 90%;
+    max-width: 600px;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+h2 { margin-top: 0; color: var(--dark-bg); }
+
+.options-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 20px 0;
+}
+
+.option {
+    padding: 15px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.option:hover {
+    background-color: #f0f7ff;
+    border-color: var(--primary-color);
+}
+
+/* Logic Colors */
+.correct { background-color: var(--success-color) !important; color: white; border-color: var(--success-color); }
+.wrong { background-color: var(--error-color) !important; color: white; border-color: var(--error-color); }
+.disabled { pointer-events: none; opacity: 0.7; }
+
+.footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+    border-top: 1px solid #eee;
+    padding-top: 20px;
+}
+
+button {
+    padding: 10px 25px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.surprise-btn { background-color: #9b59b6; width: 100%; margin-top: 20px; }
+
+.link-box {
+    display: block;
+    margin-top: 20px;
+    text-align: center;
+    padding: 15px;
+    background: #fff3cd;
+    color: #856404;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: bold;
+    border: 1px dashed #ffeeba;
+}
+
+.hidden { display: none; }
+
+@media (max-width: 480px) {
+    .quiz-container { padding: 20px; }
+}
+    </style>
+</head>
+
+<body>
+
+    <div class="quiz-container" id="quiz">
+        <div class="quiz-header">
+            <h2 id="question">Question Text</h2>
+            <div class="options-container" id="options">
+                </div>
+        </div>
+        
+        <div class="footer">
+            <span id="question-number">Question 1 of 10</span>
+            <button id="next-btn" class="hidden">Next Question</button>
+        </div>
+    </div>
+
+    <div id="result-container" class="quiz-container hidden">
+        <h2>Quiz Completed!</h2>
+        <p class="score-text">Your Score: <span id="score">0</span>/10</p>
+        <button id="surprise-btn" class="surprise-btn">Click for Surprise</button>
+        <div id="surprise-link-container" class="hidden">
+            <a href=" https://codewithakshayp.github.io/surprice/" target="_blank" class="link-box">🎁 Open Your Surprise</a>
+        </div>
+    </div>
+
+    <script>
+        const quizData = [
+    { q: "HTML ka full form kya hai?", a: "B", options: ["Hyper Text Makeup Language", "Hyper Text Markup Language", "High Text Mark Language", "Hyper Transfer Markup Language"] },
+    { q: "HTML me heading ke liye kaunsa tag use hota hai?", a: "B", options: ["<head>", "<h1> to <h6>", "<a>", "<p>"] },
+    { q: "Image add karne ke liye kaunsa tag use hota hai?", a: "A", options: ["<img>", "<picture>", "<src>", "<href>"] },
+    { q: "CSS ka full form kya hai?", a: "B", options: ["Creative Style Sheets", "Cascading Style Sheets", "Computer Style Sheets", "Colorful Style Sheets"] },
+    { q: "CSS me text ka color change karne ke liye kaunsi property use hota hai?", a: "C", options: ["font-color", "text-color", "color", "background-color"] },
+    { q: "External CSS file ko HTML me link karne ke liye kaunsa tag use hota hai?", a: "C", options: ["<style>", "<script>", "<link>", "<rel>"] },
+    { q: "JavaScript me variable declare karne ke liye kaunsa keyword use hota hai?", a: "D", options: ["var", "let", "const", "All of the above"] },
+    { q: "JavaScript code HTML me kaunse tag ke andar likha jata hai?", a: "C", options: ["<js>", "<javascript>", "<script>", "<code>"] },
+    { q: "JavaScript me alert box show karne ke liye kaunsa function use hota hai?", a: "B", options: ["msg()", "alert()", "popup()", "show()"] },
+    { q: "CSS ka use mainly kisliye hota hai?", a: "B", options: ["Structure create karne ke liye", "Styling aur layout design ke liye", "Database manage karne ke liye", "Server handle karne ke liye"] }
+];
+
+let currentIdx = 0;
+let score = 0;
+
+const qEl = document.getElementById('question');
+const optionsEl = document.getElementById('options');
+const nextBtn = document.getElementById('next-btn');
+const qNumEl = document.getElementById('question-number');
+const quizBox = document.getElementById('quiz');
+const resultBox = document.getElementById('result-container');
+
+function loadQuiz() {
+    resetState();
+    const currentQuiz = quizData[currentIdx];
+    qEl.innerText = currentQuiz.q;
+    qNumEl.innerText = `Question ${currentIdx + 1} of 10`;
+
+    currentQuiz.options.forEach((opt, i) => {
+        const button = document.createElement('div');
+        button.innerText = opt;
+        button.classList.add('option');
+        // Map index to A, B, C, D
+        const char = String.fromCharCode(65 + i); 
+        button.addEventListener('click', () => selectAnswer(button, char));
+        optionsEl.appendChild(button);
+    });
+}
+
+function resetState() {
+    nextBtn.classList.add('hidden');
+    while (optionsEl.firstChild) {
+        optionsEl.removeChild(optionsEl.firstChild);
+    }
+}
+
+function selectAnswer(element, choice) {
+    const correct = quizData[currentIdx].a;
+    const allOptions = document.querySelectorAll('.option');
+
+    if (choice === correct) {
+        element.classList.add('correct');
+        score++;
+    } else {
+        element.classList.add('wrong');
+        // Show the correct answer automatically
+        allOptions.forEach((btn, idx) => {
+            if (String.fromCharCode(65 + idx) === correct) btn.classList.add('correct');
+        });
+    }
+
+    allOptions.forEach(btn => btn.classList.add('disabled'));
+    nextBtn.classList.remove('hidden');
+}
+
+nextBtn.addEventListener('click', () => {
+    currentIdx++;
+    if (currentIdx < quizData.length) {
+        loadQuiz();
+    } else {
+        showResult();
+    }
+});
+
+function showResult() {
+    quizBox.classList.add('hidden');
+    resultBox.classList.remove('hidden');
+    document.getElementById('score').innerText = score;
+}
+
+// Surprise Logic
+document.getElementById('surprise-btn').addEventListener('click', function() {
+    document.getElementById('surprise-link-container').classList.remove('hidden');
+    this.style.display = 'none';
+});
+
+loadQuiz();
+    </script>
+</body>
+</html>
